@@ -28,6 +28,7 @@ class BookListViewModel(
 
     private var cachedBooks = emptyList<Book>()
     private var searchJob: Job? = null
+    private var observeFavoriteBooksJob: Job? = null
 
     private val _state = MutableStateFlow(BookListState())
     val state = _state
@@ -35,6 +36,7 @@ class BookListViewModel(
             if (cachedBooks.isEmpty()) {
                 observeSearchQuery()
             }
+            observeFavoriteBooks()
         }
         .stateIn(
             viewModelScope,
@@ -58,6 +60,18 @@ class BookListViewModel(
                 }
             }
         }
+    }
+
+    private fun observeFavoriteBooks() {
+        observeFavoriteBooksJob?.cancel()
+        observeFavoriteBooksJob = bookRepository
+            .getFavoriteBooks()
+            .onEach { favoriteBooks ->
+                _state.update { it.copy(
+                    favouriteBooks = favoriteBooks
+                ) }
+            }
+            .launchIn(viewModelScope)
     }
 
     @OptIn(FlowPreview::class)
